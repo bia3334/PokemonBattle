@@ -1,0 +1,34 @@
+{
+    "1": {
+        "name": "Bulbasaur",
+        "id": "#1",
+        "types": {
+            "type1": "grass",
+            "type2": "poison"
+        },
+        "stats": {
+            "HP": "45",
+            "Attack": "49",
+            "Defense": "49",
+            "Speed": "45",
+            "Sp Atk": "65",
+            "Sp Def": "65"
+        }
+    },
+    "2": {
+        "name": "Bulbasaur",
+        "id": "#1",
+        "types": {
+            "type1": "grass",
+            "type2": "poison"
+        },
+        "stats": {
+            "HP": "45",
+            "Attack": "49",
+            "Defense": "49",
+            "Speed": "45",
+            "Sp Atk": "65",
+            "Sp Def": "65"
+        }
+    }
+}
