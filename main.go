@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/PuerkitoBio/goquery"
@@ -34,7 +35,7 @@ func main() {
 	pokemonMap := make(map[int]PokemonDetail)
 
 	// Loop through Pokémon IDs from 1 to 151
-	for id := 1; id <= 2; id++ {
+	for id := 1; id <= 10; id++ {
 		// Construct the URL with the current ID
 		url := fmt.Sprintf("https://pokedex.org/#/pokemon/%d", id)
 
@@ -49,11 +50,12 @@ func main() {
 		pokemonMap[id] = pokemonDetail
 	}
 
-	// Marshal the Pokémon map into JSON format
+	// Marshal the Pokémon map into JSON format with indentation and line breaks
 	jsonData, err := json.MarshalIndent(pokemonMap, "", "    ")
 	if err != nil {
 		log.Fatal("Error marshalling Pokémon details into JSON: ", err)
 	}
+
 	// Write the JSON data to a file
 	file, err := os.Create("pokemon_details.json")
 	if err != nil {
@@ -72,7 +74,20 @@ func main() {
 func fetchPokemonDetail(url string) (PokemonDetail, error) {
 	var pokemonDetail PokemonDetail
 
-	doc, err := goquery.NewDocument(url)
+	// Make the HTTP request
+	resp, err := http.Get(url)
+	if err != nil {
+		return pokemonDetail, err
+	}
+	defer resp.Body.Close()
+
+	// Check if the HTTP request was successful
+	if resp.StatusCode != http.StatusOK {
+		return pokemonDetail, fmt.Errorf("HTTP request failed with status code %d", resp.StatusCode)
+	}
+
+	// Load the HTML document
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return pokemonDetail, err
 	}
