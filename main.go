@@ -32,12 +32,12 @@ type PokemonStats struct {
 }
 
 func main() {
-	pokemonMap := make(map[int]PokemonDetail)
+	var pokemons []PokemonDetail
 
 	// Loop through Pokémon IDs from 1 to 151
 	for id := 1; id <= 10; id++ {
-		// Construct the URL with the current ID
-		url := fmt.Sprintf("https://pokedex.org/#/pokemon/%d", id)
+		// Construct the URL with the current ID, formatted with leading zeros
+		url := fmt.Sprintf("https://pokedex.org/#/pokemon/%02d", id)
 
 		// Fetch Pokémon details
 		pokemonDetail, err := fetchPokemonDetail(url)
@@ -46,12 +46,12 @@ func main() {
 			continue
 		}
 
-		// Store the Pokémon details in the map
-		pokemonMap[id] = pokemonDetail
+		// Store the Pokémon details in the slice
+		pokemons = append(pokemons, pokemonDetail)
 	}
 
-	// Marshal the Pokémon map into JSON format with indentation and line breaks
-	jsonData, err := json.MarshalIndent(pokemonMap, "", "    ")
+	// Marshal the Pokémon slice into JSON format with indentation and line breaks
+	jsonData, err := json.MarshalIndent(pokemons, "", "    ")
 	if err != nil {
 		log.Fatal("Error marshalling Pokémon details into JSON: ", err)
 	}
@@ -94,6 +94,7 @@ func fetchPokemonDetail(url string) (PokemonDetail, error) {
 
 	// Extracting Pokémon name
 	pokemonDetail.Name = doc.Find(".detail-panel-header").Text()
+	fmt.Printf("Fetching details for: %s\n", pokemonDetail.Name)
 
 	doc.Find(".detail-types-and-num").Each(func(_ int, s *goquery.Selection) {
 		id := s.Find(".detail-national-id span").Text()
