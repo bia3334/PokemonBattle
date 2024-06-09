@@ -180,18 +180,18 @@ func runBattle(battle *Battle) {
 	player2 := battle.Player2
 
 	for {
-		// Determine current player
+		// Determine current player based on speed
 		currentPlayer := player1
 		opponent := player2
-		if battle.Turn == 1 {
-			currentPlayer = player2
-			opponent = player1
+		if battle.Player1.Pokemons[battle.Player1.ActivePokemonIndex].Stats.Speed <
+			battle.Player2.Pokemons[battle.Player2.ActivePokemonIndex].Stats.Speed {
+			currentPlayer, opponent = opponent, currentPlayer
 		}
-
+	
 		// Prompt current player for action
 		currentPlayer.Conn.Write([]byte("Your turn! Choose an action: attack, switch, or surrender\n"))
 		action := readFromConn(currentPlayer.Conn)
-
+	
 		switch action {
 		case "attack":
 			performAttack(currentPlayer, opponent)
@@ -204,7 +204,7 @@ func runBattle(battle *Battle) {
 			currentPlayer.Conn.Write([]byte("Invalid action. Please choose attack, switch, or surrender.\n"))
 			continue
 		}
-
+	
 		// Check if opponent's Pokémon is defeated
 		if opponent.Pokemons[opponent.ActivePokemonIndex].Stats.HP <= 0 {
 			// Switch to next available Pokémon
@@ -222,10 +222,10 @@ func runBattle(battle *Battle) {
 				return
 			}
 		}
-
+	
 		// Switch turn
 		battle.Turn = 1 - battle.Turn
-	}
+	}	
 }
 
 func readFromConn(conn net.Conn) string {
