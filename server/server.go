@@ -11,15 +11,14 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const (
-	HOST        = "localhost"
-	PORT        = "8081"
-	TYPE        = "tcp"
-	MIN_PLAYERS = 2
-	POKEDEX_FILE = "pokedex.json"
+	HOST         = "localhost"
+	PORT         = "8081"
+	TYPE         = "tcp"
+	MIN_PLAYERS  = 2
+	POKEDEX_FILE = "../lib/pokedex.json"
 )
 
 type User struct {
@@ -28,26 +27,26 @@ type User struct {
 }
 
 type Pokemon struct {
-	Name     string     `json:"Name"`
-	Elements []string   `json:"Elements"`
-	Stats    Stats      `json:"Stats"`
-	Profile  Profile    `json:"Profile"`
-	Damage   []Damage   `json:"DamegeWhenAttacked"`
+	Name     string   `json:"Name"`
+	Elements []string `json:"Elements"`
+	Stats    Stats    `json:"Stats"`
+	Profile  Profile  `json:"Profile"`
+	Damage   []Damage `json:"DamegeWhenAttacked"`
 }
 
 type Stats struct {
-	HP        int `json:"HP"`
-	Attack    int `json:"Attack"`
-	Defense   int `json:"Defense"`
-	Speed     int `json:"Speed"`
+	HP         int `json:"HP"`
+	Attack     int `json:"Attack"`
+	Defense    int `json:"Defense"`
+	Speed      int `json:"Speed"`
 	Sp_Attack  int `json:"Sp_Attack"`
 	Sp_Defense int `json:"Sp_Defense"`
 }
 
 type Profile struct {
-	Height     float64 `json:"Height"`
-	Weight     float64 `json:"Weight"`
-	CatchRate  int     `json:"CatchRate"`
+	Height      float64 `json:"Height"`
+	Weight      float64 `json:"Weight"`
+	CatchRate   int     `json:"CatchRate"`
 	GenderRatio struct {
 		MaleRatio   float64 `json:"MaleRatio"`
 		FemaleRatio float64 `json:"FemaleRatio"`
@@ -58,14 +57,14 @@ type Profile struct {
 }
 
 type Damage struct {
-	Element    string  `json:"Element"`
+	Element     string  `json:"Element"`
 	Coefficient float64 `json:"Coefficient"`
 }
 
 type Player struct {
-	Conn    net.Conn
-	Name    string
-	Pokemons []Pokemon
+	Conn               net.Conn
+	Name               string
+	Pokemons           []Pokemon
 	ActivePokemonIndex int
 }
 
@@ -76,7 +75,6 @@ type Battle struct {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
 
 	listen, err := net.Listen(TYPE, HOST+":"+PORT)
 	if err != nil {
@@ -94,7 +92,7 @@ func main() {
 			log.Fatal(err)
 		}
 		fmt.Println("Client connected from", conn.RemoteAddr().String())
-		
+
 		if !authenticate(conn) {
 			fmt.Println("Authentication failed. Closing connection.")
 			conn.Write([]byte("Authentication failed\n"))
@@ -128,7 +126,7 @@ func main() {
 		rand.Shuffle(len(pokemons), func(i, j int) {
 			pokemons[i], pokemons[j] = pokemons[j], pokemons[i]
 		})
-	
+
 		// Divide the shuffled list into two sets for each player
 		player1.Pokemons = pokemons[:3]
 		player2.Pokemons = pokemons[3:6]
@@ -149,37 +147,35 @@ func main() {
 }
 
 func authenticate(conn net.Conn) bool {
-    authData := readFromConn(conn)
-    parts := strings.Split(authData, "_")
-    if len(parts) != 2 {
-        log.Printf("Authentication data format error: expected 2 parts, got %d", len(parts))
-        return false
-    }
+	authData := readFromConn(conn)
+	parts := strings.Split(authData, "_")
+	if len(parts) != 2 {
+		log.Printf("Authentication data format error: expected 2 parts, got %d", len(parts))
+		return false
+	}
 
-    username := parts[0]
-    receivedPassword := parts[1]
-    receivedHashedPassword := hashPassword(receivedPassword)
+	username := parts[0]
+	receivedPassword := parts[1]
+	receivedHashedPassword := hashPassword(receivedPassword)
 
-    users, err := loadUsersFromFile("users.json")
-    if err != nil {
-        log.Printf("Error loading users: %v", err)
-        return false
-    }
+	users, err := loadUsersFromFile("../lib/users.json")
+	if err != nil {
+		log.Printf("Error loading users: %v", err)
+		return false
+	}
 
-    for _, user := range users {
-        storedHashedPassword := hashPassword(user.Password) // Assuming passwords stored are not hashed
-        if user.Username == username && storedHashedPassword == receivedHashedPassword {
-            log.Println("Authentication successful")
+	for _, user := range users {
+		storedHashedPassword := hashPassword(user.Password) // Assuming passwords stored are not hashed
+		if user.Username == username && storedHashedPassword == receivedHashedPassword {
+			log.Println("Authentication successful")
 			conn.Write([]byte("authenticated\n"))
-            return true
-        }
-    }
+			return true
+		}
+	}
 
-    log.Println("Authentication failed: no matching user found")
-    return false
+	log.Println("Authentication failed: no matching user found")
+	return false
 }
-
-
 
 func loadUsersFromFile(filename string) ([]User, error) {
 	file, err := os.Open(filename)
@@ -233,7 +229,7 @@ func chooseStartingPokemon(player *Player) int {
 	for i, pokemon := range player.Pokemons {
 		player.Conn.Write([]byte(fmt.Sprintf("%d: %s\n", i+1, pokemon.Name)))
 	}
-	
+
 	player.Conn.Write([]byte("Choose your starting Pokémon:\n"))
 
 	for {
@@ -258,11 +254,11 @@ func runBattle(battle *Battle) {
 			battle.Player2.Pokemons[battle.Player2.ActivePokemonIndex].Stats.Speed {
 			currentPlayer, opponent = opponent, currentPlayer
 		}
-	
+
 		// Prompt current player for action
 		currentPlayer.Conn.Write([]byte("Your turn! Choose an action: attack, switch, or surrender\n"))
 		action := readFromConn(currentPlayer.Conn)
-	
+
 		switch action {
 		case "attack":
 			performAttack(currentPlayer, opponent)
@@ -275,7 +271,7 @@ func runBattle(battle *Battle) {
 			currentPlayer.Conn.Write([]byte("Invalid action. Please choose attack, switch, or surrender.\n"))
 			continue
 		}
-	
+
 		// Check if opponent's Pokémon is defeated
 		if opponent.Pokemons[opponent.ActivePokemonIndex].Stats.HP <= 0 {
 			// Switch to next available Pokémon
@@ -293,10 +289,10 @@ func runBattle(battle *Battle) {
 				return
 			}
 		}
-	
+
 		// Switch turn
 		battle.Turn = 1 - battle.Turn
-	}	
+	}
 }
 
 func readFromConn(conn net.Conn) string {
@@ -319,7 +315,7 @@ func performAttack(attacker, defender *Player) {
 	var damage int
 	if isSpecial {
 		elementalMultiplier := 1.0 // Simplification for example purposes
-		damage = int(float64(attackPokemon.Stats.Sp_Attack) * elementalMultiplier) - defendPokemon.Stats.Sp_Defense
+		damage = int(float64(attackPokemon.Stats.Sp_Attack)*elementalMultiplier) - defendPokemon.Stats.Sp_Defense
 	} else {
 		damage = attackPokemon.Stats.Attack - defendPokemon.Stats.Defense
 	}
