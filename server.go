@@ -1,14 +1,16 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
 	"net"
 	"os"
-	"strings"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -19,6 +21,11 @@ const (
 	MIN_PLAYERS = 2
 	POKEDEX_FILE = "pokedex.json"
 )
+
+type User struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
 
 type Pokemon struct {
 	Name     string     `json:"Name"`
@@ -86,7 +93,14 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println("Client connected from", conn.RemoteAddr())
+		fmt.Println("Client connected from", conn.RemoteAddr().String())
+		
+		if !authenticate(conn) {
+			fmt.Println("Authentication failed. Closing connection.")
+			conn.Write([]byte("Authentication failed\n"))
+			conn.Close()
+			continue
+		}
 
 		// Add player to the list
 		player := &Player{
@@ -132,6 +146,63 @@ func main() {
 		runBattle(battle)
 		break // Exit loop after starting the battle
 	}
+}
+
+func authenticate(conn net.Conn) bool {
+    authData := readFromConn(conn)
+    parts := strings.Split(authData, "_")
+    if len(parts) != 2 {
+        log.Printf("Authentication data format error: expected 2 parts, got %d", len(parts))
+        return false
+    }
+
+    username := parts[0]
+    receivedPassword := parts[1]
+    receivedHashedPassword := hashPassword(receivedPassword)
+
+    users, err := loadUsersFromFile("users.json")
+    if err != nil {
+        log.Printf("Error loading users: %v", err)
+        return false
+    }
+
+    for _, user := range users {
+        storedHashedPassword := hashPassword(user.Password) // Assuming passwords stored are not hashed
+        if user.Username == username && storedHashedPassword == receivedHashedPassword {
+            log.Println("Authentication successful")
+			conn.Write([]byte("authenticated\n"))
+            return true
+        }
+    }
+
+    log.Println("Authentication failed: no matching user found")
+    return false
+}
+
+
+
+func loadUsersFromFile(filename string) ([]User, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var users struct {
+		Users []User `json:"users"`
+	}
+	err = json.NewDecoder(file).Decode(&users)
+	if err != nil {
+		return nil, err
+	}
+
+	return users.Users, nil
+}
+
+func hashPassword(password string) string {
+	hasher := sha256.New()
+	hasher.Write([]byte(password))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
 
 func loadPokemonsFromFile(filename string) ([]Pokemon, error) {

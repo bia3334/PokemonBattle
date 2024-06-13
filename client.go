@@ -24,6 +24,23 @@ func main() {
 	reader := bufio.NewReader(conn)
 	fmt.Println("Connected to PokeBat Game Server")
 
+	// Authentication
+	username := prompt("Enter username: ")
+	password := prompt("Enter password: ")
+
+	authData := fmt.Sprintf("%s_%s\n", username, password)
+	conn.Write([]byte(authData))
+
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		log.Fatal(err)
+	}
+	if strings.TrimSpace(response) != "authenticated" {
+		fmt.Println("Authentication failed.")
+		return
+	}
+	fmt.Println("Authentication successful. Starting game.")
+	
 	// Game loop
 	for {
 		message, err := reader.ReadString('\n')
